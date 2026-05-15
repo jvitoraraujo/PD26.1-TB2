@@ -1,3 +1,24 @@
-Davila: Implementação da persistência com Delta Lake, controle de IDs (.seq) e método Vacuum.
-Weydna: Implementação dos schemas Pydantic, logica do sistema e rotas CRUD no FastAPI.
-Vitor: Implementação dos endpoints de exportação CSV/ZIP via streaming e documentação técnica da API.
+Vitor: Tratamento robusto de exceções global;
+       Configuração do Alembic e migrações;
+       Configuração da API assíncrona (async/await, AsyncSession, AsyncEngine);
+       Entidade Médico com CRUD completo;
+       Consultas do Médico: busca por ID, filtro por especialidade, cidade e UF, contagem total;
+       Entidade Document com upload/download de arquivos (POST, GET, DELETE);
+       Paginação global com fastapi-pagination;
+       divisao_tarefas.txt;
+
+Weydna: Paciente com CRUD completo;
+        Consultas do Paciente;
+        Entidade Exame com CRUD completo;
+        Consultas do Exame;
+        Relacionamento one-to-many entre Paciente e Exame;
+        Eager loading com selectinload() nos relacionamentos;
+        Configuração do PostgreSQL (Supabase/Neon) no .env;
+        Script de carga inicial com Faker pt_BR (100+ registros por entidade);
+
+Davila: Consultas: listagem por médico, listagem por paciente, filtro por data, busca por diagnóstico;
+        Entidade Internação com CRUD completo;
+        Consultas: listagem por paciente, filtro por período, contagem por quarto;
+        Relacionamento many-to-many entre Consulta e Médico/Paciente;
+        Eager loading com joinedload() nos relacionamentos many-to-one;
+        Tratamento robusto de exceções global;
