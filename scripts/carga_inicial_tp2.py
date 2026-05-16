@@ -1,6 +1,6 @@
 """
 Script de carga inicial — popula o banco SQLite com dados realistas.
-Execute com: uv run python ../scripts/carga_inicial_tp2.py
+Execute com: uv run python scripts/carga_inicial_tp2.py
 """
 
 import asyncio
@@ -10,7 +10,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from random import choice, randint
-from datetime import timezone
 
 from faker import Faker
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -109,7 +108,7 @@ async def criar_consultas(
     print(f"  Inserindo {quantidade} consultas...")
     consultas = []
     for i in range(quantidade):
-        data = fake.date_time_between(start_date="-2y", end_date="now", tzinfo=timezone.utc)
+        data = fake.date_time_between(start_date="-2y", end_date="now")
         consulta = Consulta(
             data_consulta=data,
             paciente_id=choice(pacientes).id,
@@ -148,10 +147,10 @@ async def criar_internacoes(
 ) -> None:
     print(f"  Inserindo {quantidade} internações...")
     for i in range(quantidade):
-        entrada = fake.date_time_between(start_date="-2y", end_date="-3d", tzinfo=timezone.utc)
+        entrada = fake.date_time_between(start_date="-2y", end_date="-3d")
         ainda_internado = randint(0, 4) == 0
         saida = None if ainda_internado else fake.date_time_between(
-            start_date=entrada, end_date="now", tzinfo=timezone.utc
+            start_date=entrada, end_date="now"
         )
         internacao = Internacao(
             data_entrada=entrada,
