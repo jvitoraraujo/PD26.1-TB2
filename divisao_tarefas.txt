@@ -11,7 +11,7 @@ Weydna: Paciente com CRUD completo;
         Consultas do Paciente;
         Entidade Exame com CRUD completo;
         Consultas do Exame;
-        Relacionamento one-to-many entre Paciente e Exame;
+        Relacionamento one-to-many entre Paciente e Consulta, Consulta e Exame;
         Eager loading com selectinload() nos relacionamentos;
         Configuração do PostgreSQL (Supabase/Neon) no .env;
         Script de carga inicial com Faker pt_BR (100+ registros por entidade);

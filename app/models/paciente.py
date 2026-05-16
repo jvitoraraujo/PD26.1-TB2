@@ -44,5 +44,6 @@ class Paciente(Base):
 
     consultas: Mapped[list["Consulta"]] = relationship(
         back_populates="paciente",
-        lazy="selectin"
+        lazy="selectin",
+        cascade="all, delete-orphan"
     )

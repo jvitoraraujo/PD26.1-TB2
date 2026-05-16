@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
-
 from datetime import datetime
 
 from sqlalchemy.orm import (
@@ -22,12 +20,9 @@ if TYPE_CHECKING:
     from app.models.exame import Exame
 
 class Consulta(Base):
-
     __tablename__ = "consultas"
 
-    id: Mapped[int] = mapped_column(
-        primary_key=True
-    )
+    id: Mapped[int] = mapped_column(primary_key=True)
 
     data_consulta: Mapped[datetime] = mapped_column(
         DateTime,
