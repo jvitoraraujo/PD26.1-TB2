@@ -6,18 +6,20 @@ from app.routers import medicos
 from app.routers import paciente_router
 from app.routers import exame_router
 from app.routers import consulta_router
+from app.routers import internacao_router as internacoes
 
 from app.db.database import Base, engine
 from app.models.paciente import Paciente
 from app.models.exame import Exame
 from app.models.consulta import Consulta
+from app.models.internacao import Internacao
 
-#função async de tabelas
+# função async de tabelas
 async def create_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-#lifespan
+# lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
@@ -30,6 +32,7 @@ app.include_router(medicos.router)
 app.include_router(paciente_router.router)
 app.include_router(exame_router.router)
 app.include_router(consulta_router.router)
+app.include_router(internacoes.router)
 
 # Inicializa a paginação globalmente na aplicação
 add_pagination(app)
