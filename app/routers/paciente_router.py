@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.db.database import get_db
 from app.models.paciente import Paciente
@@ -32,34 +33,30 @@ async def criar_paciente(
 
 #read all
 @router.get("/", response_model=list[PacienteResponse])
-async def listar_pacientes(
-    db: AsyncSession = Depends(get_db)
-):
+async def listar_pacientes(db: AsyncSession = Depends(get_db)):
+
     result = await db.execute(
-        select(Paciente)
+        select(Paciente).options(
+            selectinload(Paciente.consultas)
+        )
     )
 
     return result.scalars().all()
 
-#read by id
+#busca por id
 @router.get("/{paciente_id}", response_model=PacienteResponse)
-async def buscar_paciente(
-    paciente_id: int,
-    db: AsyncSession = Depends(get_db)
-):
+async def buscar_paciente(paciente_id: int, db: AsyncSession = Depends(get_db)):
+
     result = await db.execute(
-        select(Paciente).where(
-            Paciente.id == paciente_id
-        )
+        select(Paciente).options(
+            selectinload(Paciente.consultas)
+        ).where(Paciente.id == paciente_id)
     )
 
     paciente = result.scalar_one_or_none()
 
     if not paciente:
-        raise HTTPException(
-            status_code=404,
-            detail="Paciente não encontrado"
-        )
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
 
     return paciente
 

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.db.database import get_db
 
@@ -18,7 +19,7 @@ router = APIRouter(
     tags=["Exames"]
 )
 
-#create
+#criar
 @router.post("/", response_model=ExameResponse)
 async def criar_exame(
     exame: ExameCreate,
@@ -45,19 +46,19 @@ async def criar_exame(
 
     return novo
 
-#read all
+#listar
 @router.get("/", response_model=list[ExameResponse])
-async def listar_exames(
-    db: AsyncSession = Depends(get_db)
-):
+async def listar_exames(db: AsyncSession = Depends(get_db)):
 
     result = await db.execute(
-        select(Exame)
+        select(Exame).options(
+            selectinload(Exame.consulta)
+        )
     )
 
     return result.scalars().all()
 
-#read by id
+#busca por id
 @router.get("/{exame_id}",
     response_model=ExameResponse
 )
@@ -82,7 +83,7 @@ async def buscar_exame(
 
     return exame
 
-#update
+#atualização
 @router.put("/{exame_id}",
     response_model=ExameResponse
 )
@@ -116,7 +117,7 @@ async def atualizar_exame(
 
     return exame
 
-#delete
+#deletar
 @router.delete("/{exame_id}")
 async def deletar_exame(
     exame_id: int,

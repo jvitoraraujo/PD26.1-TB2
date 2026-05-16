@@ -35,6 +35,7 @@ class Paciente(Base):
     consultas: Mapped[list["Consulta"]] = relationship(
         back_populates="paciente",
         lazy="selectin",
+        cascade="all, delete-orphan",
     )
 
     # Relacionamento one-to-many com Internacao
