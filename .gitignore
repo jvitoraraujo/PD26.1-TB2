@@ -23,3 +23,12 @@ venv/
 Thumbs.db
 # Ambiente
 .env
+
+# Banco de dados
+*.db
+
+# Egg info
+persistencia_2026_1.egg-info/
+
+# Hello
+hello.py
