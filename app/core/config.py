@@ -1,7 +1,6 @@
 import os
-from pathlib import Path
+from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).parent.parent.parent
-DATA_DIR = BASE_DIR / "data"
+load_dotenv()
 
-DATABASE_URL = f"sqlite+aiosqlite:///{BASE_DIR}/gestao_hospitalar.db"
+DATABASE_URL = os.getenv("DATABASE_URL")
