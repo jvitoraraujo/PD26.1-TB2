@@ -7,6 +7,7 @@ from app.routers import paciente_router
 from app.routers import exame_router
 from app.routers import consulta_router
 from app.routers import internacao_router as internacoes
+from app.routers import document_router
 
 from app.db.database import Base, engine
 from app.models.paciente import Paciente
@@ -39,6 +40,7 @@ app.include_router(paciente_router.router)
 app.include_router(exame_router.router)
 app.include_router(consulta_router.router)
 app.include_router(internacoes.router)
+app.include_router(document_router.router)
 
 # Inicializa a paginação globalmente na aplicação
 add_pagination(app)
