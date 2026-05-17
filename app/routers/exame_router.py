@@ -1,3 +1,5 @@
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -47,16 +49,10 @@ async def criar_exame(
     return novo
 
 #listar
-@router.get("/", response_model=list[ExameResponse])
+@router.get("/", response_model=Page[ExameResponse])
 async def listar_exames(db: AsyncSession = Depends(get_db)):
-
-    result = await db.execute(
-        select(Exame).options(
-            selectinload(Exame.consulta)
-        )
-    )
-
-    return result.scalars().all()
+    query = select(Exame).options(selectinload(Exame.consulta))
+    return await paginate(db, query)
 
 #busca por id
 @router.get("/{exame_id}",

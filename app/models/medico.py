@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, relationship
 from app.db.database import Base
 
 if TYPE_CHECKING:
+    from app.models.consulta import Consulta
     from app.models.internacao import Internacao
 
 
@@ -28,6 +29,12 @@ class Medico(Base):
 
     # Relacionamento one-to-many com Internacao
     internacoes: Mapped[list["Internacao"]] = relationship(
+        back_populates="medico",
+        lazy="selectin",
+    )
+
+    # Relacionamento one-to-many com Consulta
+    consultas: Mapped[list["Consulta"]] = relationship(
         back_populates="medico",
         lazy="selectin",
     )

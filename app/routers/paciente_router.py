@@ -1,3 +1,5 @@
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -32,16 +34,10 @@ async def criar_paciente(
     return novo
 
 #read all
-@router.get("/", response_model=list[PacienteResponse])
+@router.get("/", response_model=Page[PacienteResponse])
 async def listar_pacientes(db: AsyncSession = Depends(get_db)):
-
-    result = await db.execute(
-        select(Paciente).options(
-            selectinload(Paciente.consultas)
-        )
-    )
-
-    return result.scalars().all()
+    query = select(Paciente).options(selectinload(Paciente.consultas))
+    return await paginate(db, query)
 
 #busca por id
 @router.get("/{paciente_id}", response_model=PacienteResponse)
