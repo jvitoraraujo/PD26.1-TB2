@@ -21,11 +21,6 @@ venv/
 # Sistema
 .DS_Store
 Thumbs.db
-# Ambiente
-
-
-# Banco de dados
-*.db
 
 # Egg info
 persistencia_2026_1.egg-info/

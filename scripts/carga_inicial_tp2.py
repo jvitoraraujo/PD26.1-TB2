@@ -103,6 +103,7 @@ async def criar_pacientes(session: AsyncSession, quantidade: int) -> list[Pacien
 async def criar_consultas(
     session: AsyncSession,
     pacientes: list[Paciente],
+    medicos: list[Medico],
     quantidade: int,
 ) -> list[Consulta]:
     print(f"  Inserindo {quantidade} consultas...")
@@ -111,7 +112,9 @@ async def criar_consultas(
         data = fake.date_time_between(start_date="-2y", end_date="now")
         consulta = Consulta(
             data_consulta=data,
+            diagnostico=fake.sentence(nb_words=5) if randint(0, 1) else None,
             paciente_id=choice(pacientes).id,
+            medico_id=choice(medicos).id,
         )
         session.add(consulta)
         consultas.append(consulta)
@@ -175,7 +178,7 @@ async def main() -> None:
         async with session.begin():
             medicos = await criar_medicos(session, 100)
             pacientes = await criar_pacientes(session, 100)
-            consultas = await criar_consultas(session, pacientes, 100)
+            consultas = await criar_consultas(session, pacientes, medicos, 100)
             await criar_exames(session, consultas, 100)
             await criar_internacoes(session, pacientes, medicos, 100)
 
