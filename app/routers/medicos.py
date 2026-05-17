@@ -1,82 +1,135 @@
-from fastapi import APIRouter, HTTPException, status, Query, Depends
-from app.schemas.medico_schema import MedicoResponse, MedicoCreate
-from app.repositories.hospital_repository import HospitalRepository
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import func
+from fastapi_pagination import Page
+from fastapi_pagination.ext.sqlalchemy import paginate
+
+from app.db.database import get_db
+from app.models.medico import Medico
+from app.schemas import medico_schema
 
 router = APIRouter(prefix="/medicos", tags=["Médicos"])
 
-# Dependência para instanciar e injetar o repositório
-def get_medico_repo() -> HospitalRepository:
-    # Utiliza o MedicoResponse pois o repositório espera um modelo que contenha 'id'
-    return HospitalRepository(model=MedicoResponse, caminho="dados/delta_medicos")
 
-@router.get("/count")
-def contar_medicos(repo: HospitalRepository = Depends(get_medico_repo)):
-    total = repo.count()
-    return {"total": total}
+# ---------------------------------------------------------
+# ROTAS ESTÁTICAS (Devem vir antes do /{medico_id})
+# ---------------------------------------------------------
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=MedicoResponse)
-def criar_medico(medico_in: MedicoCreate, repo: HospitalRepository = Depends(get_medico_repo)):
-    # Verificação de CRM duplicado utilizando o método otimizado do repositório
-    if repo.existe_por_crm(medico_in.crm):
-        raise HTTPException(status_code=400, detail=f"Já existe um médico com o CRM {medico_in.crm}")
+@router.get("/estatisticas/count", response_model=dict)
+async def contar_medicos(db: AsyncSession = Depends(get_db)):
+    """
+    Retorna o número total de médicos cadastrados no sistema.
+    """
+    # Utiliza a função count do SQLAlchemy de forma otimizada
+    resultado = await db.execute(select(func.count(Medico.id)))
+    total = resultado.scalar()
     
-    # Prepara o objeto para o repositório (precisa de ser do tipo 'T' que inclui id)
-    dados = medico_in.model_dump()
-    dados["id"] = 0 # O ID real será gerado pelo autoincremento (_proximo_id) do repositório
-    novo_medico = MedicoResponse(**dados)
-    
-    return repo.insert(novo_medico)
+    return {"total_medicos": total}
 
-# NOVA ROTA: Criada para expor a listagem paginada explicitamente
-@router.get("/", response_model=list[MedicoResponse])
-def listar_medicos(
-    pagina: int = Query(1, ge=1, description="Número da página"),
-    tamanho: int = Query(10, ge=1, le=100, description="Quantidade de registos por página"),
-    repo: HospitalRepository = Depends(get_medico_repo)
+
+@router.get("/buscar/filtros", response_model=Page[medico_schema.MedicoResponse])
+async def buscar_medicos_por_filtro(
+    especialidade: Optional[str] = None,
+    cidade: Optional[str] = None,
+    uf: Optional[str] = None,
+    ativo: Optional[bool] = None,
+    db: AsyncSession = Depends(get_db)
 ):
-    return repo.listar(pagina=pagina, tamanho=tamanho)
+    """
+    Busca avançada de médicos utilizando filtros opcionais.
+    """
+    query = select(Medico)
+    
+    # Adição condicional de filtros (cláusulas WHERE)
+    if especialidade:
+        query = query.where(Medico.especialidade.ilike(f"%{especialidade}%"))
+    if cidade:
+        query = query.where(Medico.cidade.ilike(f"%{cidade}%"))
+    if uf:
+        query = query.where(Medico.uf.ilike(f"%{uf}%"))
+    if ativo is not None:
+        query = query.where(Medico.ativo == ativo)
+        
+    query = query.order_by(Medico.nome)
+    
+    return await paginate(db, query)
 
-@router.get("/{id}", response_model=MedicoResponse)
-def buscar_por_id(id: int, repo: HospitalRepository = Depends(get_medico_repo)):
-    medico = repo.get(id)
+
+@router.get("/", response_model=Page[medico_schema.MedicoResponse])
+async def listar_medicos(db: AsyncSession = Depends(get_db)):
+    """
+    Lista todos os médicos cadastrados com paginação.
+    """
+    query = select(Medico).order_by(Medico.nome)
+    return await paginate(db, query)
+
+
+@router.post("/", response_model=medico_schema.MedicoResponse, status_code=status.HTTP_201_CREATED)
+async def criar_medico(medico_input: medico_schema.MedicoCreate, db: AsyncSession = Depends(get_db)):
+    """
+    Cadastra um novo médico.
+    """
+    novo_medico = Medico(**medico_input.model_dump())
+    db.add(novo_medico)
+    await db.commit()
+    await db.refresh(novo_medico)
+    return novo_medico
+
+
+# ---------------------------------------------------------
+# ROTAS DINÂMICAS (Com /{medico_id} na URL)
+# ---------------------------------------------------------
+
+@router.get("/{medico_id}", response_model=medico_schema.MedicoResponse)
+async def obter_medico(medico_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Busca um médico específico pelo seu ID.
+    """
+    result = await db.execute(select(Medico).where(Medico.id == medico_id))
+    medico = result.scalar_one_or_none()
+    
     if not medico:
-        raise HTTPException(status_code=404, detail="Médico não encontrado")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médico não encontrado")
     return medico
 
-@router.get("/busca/avancada", response_model=list[MedicoResponse])
-def buscar_medicos_avancado(
-    especialidade: str | None = Query(None),
-    cidade: str | None = Query(None),
-    uf: str | None = Query(None),
-    ativo: bool | None = Query(None),
-    repo: HospitalRepository = Depends(get_medico_repo)
+
+@router.put("/{medico_id}", response_model=medico_schema.MedicoResponse)
+async def atualizar_medico(
+    medico_id: int, 
+    medico_input: medico_schema.MedicoCreate, 
+    db: AsyncSession = Depends(get_db)
 ):
-    return repo.buscar_por_filtros(
-        especialidade=especialidade, 
-        cidade=cidade, 
-        uf=uf, 
-        ativo=ativo
-    )
-
-@router.put("/{id}", response_model=MedicoResponse)
-def atualizar_medico(id: int, dados: MedicoCreate, repo: HospitalRepository = Depends(get_medico_repo)):
-    medico_existente = repo.get(id)
-    if not medico_existente:
-        raise HTTPException(status_code=404, detail="Médico não encontrado")
+    """
+    Atualiza integralmente os dados de um médico existente pelo ID.
+    """
+    result = await db.execute(select(Medico).where(Medico.id == medico_id))
+    medico = result.scalar_one_or_none()
     
-    # Junta os novos dados com o ID existente
-    dados_atualizados = dados.model_dump()
-    dados_atualizados["id"] = id
-    medico_atualizado = MedicoResponse(**dados_atualizados)
+    if not medico:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médico não encontrado")
     
-    resultado = repo.update(id, medico_atualizado)
-    if not resultado:
-        raise HTTPException(status_code=400, detail="Erro ao atualizar médico")
+    # Atualiza os atributos do objeto SQLAlchemy com os novos dados
+    for key, value in medico_input.model_dump().items():
+        setattr(medico, key, value)
         
-    return resultado
+    await db.commit()
+    await db.refresh(medico)
+    return medico
 
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def deletar_medico(id: int, repo: HospitalRepository = Depends(get_medico_repo)):
-    sucesso = repo.delete(id)
-    if not sucesso:
-        raise HTTPException(status_code=404, detail="Médico não encontrado")
+
+@router.delete("/{medico_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def deletar_medico(medico_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Remove um médico do banco de dados pelo ID.
+    """
+    result = await db.execute(select(Medico).where(Medico.id == medico_id))
+    medico = result.scalar_one_or_none()
+    
+    if not medico:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médico não encontrado")
+        
+    await db.delete(medico)
+    await db.commit()
+    return None

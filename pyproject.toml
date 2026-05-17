@@ -16,6 +16,5 @@ dependencies = [
     "asyncpg>=0.29.0",
     "aiosqlite>=0.22.1",
     "email-validator>=2.3.0",
-    "pyarrow>=24.0.0",
-    "deltalake>=1.5.1",
+    "faker>=40.18.0",
 ]
