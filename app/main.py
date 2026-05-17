@@ -14,6 +14,9 @@ from app.models.exame import Exame
 from app.models.consulta import Consulta
 from app.models.internacao import Internacao
 
+# 1. Importação para o tratamento de exceções global
+from app.core.exceptions import configurar_excecoes
+
 # função async de tabelas
 async def create_tables():
     async with engine.begin() as conn:
@@ -27,6 +30,9 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(title="Gestão Hospitalar", version="1.0.0", lifespan=lifespan)
+
+# 2. Configuração do tratamento robusto de exceções global na instância da aplicação
+configurar_excecoes(app)
 
 app.include_router(medicos.router)
 app.include_router(paciente_router.router)
