@@ -13,8 +13,6 @@ if TYPE_CHECKING:
 
 
 class Paciente(Base):
-    """Representa um paciente no sistema hospitalar."""
-
     __tablename__ = "pacientes"
 
     id: Mapped[int] = mapped_column(primary_key=True)

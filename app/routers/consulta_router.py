@@ -17,20 +17,14 @@ from app.models.paciente import Paciente
 
 router = APIRouter(prefix="/consultas", tags=["Consultas"])
 
-
-# ------------------------------------------------------------------ #
-# Schemas                                                             #
-# ------------------------------------------------------------------ #
-
+#Dados criação
 class ConsultaCreate(BaseModel):
-    """Dados para criar uma consulta."""
     paciente_id: int
     medico_id: int | None = None
     diagnostico: str | None = None
 
-
+#Dados retorno
 class ConsultaResponse(BaseModel):
-    """Dados retornados ao consultar uma consulta."""
     id: int
     data_consulta: datetime
     diagnostico: str | None
@@ -38,11 +32,6 @@ class ConsultaResponse(BaseModel):
     medico_id: int | None
 
     model_config = {"from_attributes": True}
-
-
-# ------------------------------------------------------------------ #
-# Endpoints CRUD                                                      #
-# ------------------------------------------------------------------ #
 
 @router.post(
     "/",

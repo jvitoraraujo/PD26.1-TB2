@@ -18,7 +18,7 @@ router = APIRouter(
     tags=["Pacientes"]
 )
 
-#create
+#criar paciente
 @router.post("/", response_model=PacienteResponse)
 async def criar_paciente(
     paciente: PacienteCreate,
@@ -33,13 +33,13 @@ async def criar_paciente(
 
     return novo
 
-#read all
+#listar paciente
 @router.get("/", response_model=Page[PacienteResponse])
 async def listar_pacientes(db: AsyncSession = Depends(get_db)):
     query = select(Paciente).options(selectinload(Paciente.consultas))
     return await paginate(db, query)
 
-#busca por id
+#buscar por id
 @router.get("/{paciente_id}", response_model=PacienteResponse)
 async def buscar_paciente(paciente_id: int, db: AsyncSession = Depends(get_db)):
 
@@ -56,8 +56,7 @@ async def buscar_paciente(paciente_id: int, db: AsyncSession = Depends(get_db)):
 
     return paciente
 
-#update
-#update
+#atualizar
 @router.put("/{paciente_id}",
     response_model=PacienteResponse
 )
@@ -92,7 +91,7 @@ async def atualizar_paciente(
 
     return paciente
 
-#delete
+#deletar
 @router.delete("/{paciente_id}")
 async def deletar_paciente(
     paciente_id: int,

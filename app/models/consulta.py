@@ -15,8 +15,6 @@ if TYPE_CHECKING:
 
 
 class Consulta(Base):
-    """Representa uma consulta médica no sistema hospitalar."""
-
     __tablename__ = "consultas"
 
     id: Mapped[int] = mapped_column(primary_key=True)
