@@ -22,7 +22,7 @@ venv/
 .DS_Store
 Thumbs.db
 # Ambiente
-.env
+
 
 # Banco de dados
 *.db
