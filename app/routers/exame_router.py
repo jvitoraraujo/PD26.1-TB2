@@ -1,19 +1,13 @@
-from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from beanie import PydanticObjectId
+from fastapi import APIRouter, HTTPException
 
-from app.db.database import get_db
-
-from app.models.exame import Exame
 from app.models.consulta import Consulta
+from app.models.exame import Exame
 
 from app.schemas.exame_schema import (
     ExameCreate,
     ExameUpdate,
-    ExameResponse
+    ExameResponse,
 )
 
 router = APIRouter(
@@ -21,55 +15,70 @@ router = APIRouter(
     tags=["Exames"]
 )
 
-#criar
+
 @router.post("/", response_model=ExameResponse)
 async def criar_exame(
-    exame: ExameCreate,
-    db: AsyncSession = Depends(get_db)
+    exame: ExameCreate
 ):
 
-    consulta = await db.get(
-        Consulta,
-        exame.consulta_id
+    consulta = await Consulta.get(
+        PydanticObjectId(exame.consulta_id)
     )
 
     if not consulta:
         raise HTTPException(
             status_code=404,
-            detail="Consulta não encontrado"
+            detail="Consulta não encontrada"
         )
 
-    novo = Exame(**exame.model_dump())
+    novo = Exame(
+        tipo=exame.tipo,
+        resultado=exame.resultado,
+        consulta=consulta,
+    )
 
-    db.add(novo)
+    await novo.insert()
 
-    await db.commit()
-    await db.refresh(novo)
+    return ExameResponse(
+        id=str(novo.id),
+        tipo=novo.tipo,
+        resultado=novo.resultado,
+        consulta_id=str(consulta.id),
+    )
 
-    return novo
 
-#listar
-@router.get("/", response_model=Page[ExameResponse])
-async def listar_exames(db: AsyncSession = Depends(get_db)):
-    query = select(Exame).options(selectinload(Exame.consulta))
-    return await paginate(db, query)
+@router.get("/", response_model=list[ExameResponse])
+async def listar_exames():
 
-#busca por id
-@router.get("/{exame_id}",
-    response_model=ExameResponse
-)
+    exames = await Exame.find_all(
+        fetch_links=True
+    ).to_list()
+
+    resposta = []
+
+    for exame in exames:
+
+        resposta.append(
+            ExameResponse(
+                id=str(exame.id),
+                tipo=exame.tipo,
+                resultado=exame.resultado,
+                consulta_id=str(exame.consulta.id),
+            )
+        )
+
+    return resposta
+
+
+@router.get("/{exame_id}", response_model=ExameResponse)
 async def buscar_exame(
-    exame_id: int,
-    db: AsyncSession = Depends(get_db)
+    exame_id: str
 ):
 
-    result = await db.execute(
-        select(Exame).where(
-            Exame.id == exame_id
-        )
+    exame = await Exame.get(
+        PydanticObjectId(exame_id),
+        fetch_links=True
     )
-
-    exame = result.scalar_one_or_none()
 
     if not exame:
         raise HTTPException(
@@ -77,25 +86,24 @@ async def buscar_exame(
             detail="Exame não encontrado"
         )
 
-    return exame
+    return ExameResponse(
+        id=str(exame.id),
+        tipo=exame.tipo,
+        resultado=exame.resultado,
+        consulta_id=str(exame.consulta.id),
+    )
 
-#atualização
-@router.put("/{exame_id}",
-    response_model=ExameResponse
-)
+
+@router.put("/{exame_id}", response_model=ExameResponse)
 async def atualizar_exame(
-    exame_id: int,
-    dados: ExameUpdate,
-    db: AsyncSession = Depends(get_db)
+    exame_id: str,
+    dados: ExameUpdate
 ):
 
-    result = await db.execute(
-        select(Exame).where(
-            Exame.id == exame_id
-        )
+    exame = await Exame.get(
+        PydanticObjectId(exame_id),
+        fetch_links=True
     )
-
-    exame = result.scalar_one_or_none()
 
     if not exame:
         raise HTTPException(
@@ -103,30 +111,31 @@ async def atualizar_exame(
             detail="Exame não encontrado"
         )
 
-    for campo, valor in dados.model_dump(
+    update_data = dados.model_dump(
         exclude_unset=True
-    ).items():
+    )
+
+    for campo, valor in update_data.items():
         setattr(exame, campo, valor)
 
-    await db.commit()
-    await db.refresh(exame)
+    await exame.save()
 
-    return exame
-
-#deletar
-@router.delete("/{exame_id}")
-async def deletar_exame(
-    exame_id: int,
-    db: AsyncSession = Depends(get_db)
-):
-
-    result = await db.execute(
-        select(Exame).where(
-            Exame.id == exame_id
-        )
+    return ExameResponse(
+        id=str(exame.id),
+        tipo=exame.tipo,
+        resultado=exame.resultado,
+        consulta_id=str(exame.consulta.id),
     )
 
-    exame = result.scalar_one_or_none()
+
+@router.delete("/{exame_id}")
+async def deletar_exame(
+    exame_id: str
+):
+
+    exame = await Exame.get(
+        PydanticObjectId(exame_id)
+    )
 
     if not exame:
         raise HTTPException(
@@ -134,9 +143,7 @@ async def deletar_exame(
             detail="Exame não encontrado"
         )
 
-    await db.delete(exame)
-
-    await db.commit()
+    await exame.delete()
 
     return {
         "message": "Exame removido com sucesso"

@@ -1,20 +1,24 @@
-#Field para validação extra
-#EmailStr ajuda na validação automática de e-mail
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field
 
-# Validação da entrada de dados 
+
 class MedicoCreate(BaseModel):
     nome: str
     crm: str = Field(..., min_length=1)
-    especialidade: str
+
+    telefone: str
     email: EmailStr | None = None
-    telefone: str 
+
     cidade: str
     uf: str = Field(..., min_length=2, max_length=2)
+
     ativo: bool = True
 
-#Retorno de dados
-class MedicoResponse(MedicoCreate):
-    id: int 
+    especialidades: list[str]
 
-    model_config = ConfigDict(from_attributes=True)
+
+class MedicoResponse(MedicoCreate):
+    id: str
+
+    model_config = {
+        "from_attributes": True
+    }

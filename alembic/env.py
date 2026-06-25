@@ -28,7 +28,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # 4. Importa a Base e os seus Modelos
-from app.db.database import Base
+from app.db.db import Base
 from app.models.medico import Medico
 from app.models.paciente import Paciente
 from app.models.consulta import Consulta

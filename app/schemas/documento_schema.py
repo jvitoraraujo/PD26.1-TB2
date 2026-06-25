@@ -1,14 +1,20 @@
-from pydantic import BaseModel
 from datetime import datetime
+from pydantic import BaseModel
+
 
 class DocumentResponse(BaseModel):
-    id: int
+    id: str
+
     original_filename: str
     content_type: str
     extension: str
-    size_bytes: int
-    created_at: datetime
-    paciente_id: int
 
-    class Config:
-        from_attributes = True
+    size_bytes: int
+
+    created_at: datetime
+
+    paciente_id: str
+
+    model_config = {
+        "from_attributes": True
+    }
