@@ -1,16 +1,11 @@
-from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from sqlalchemy.orm import selectinload
+from beanie import PydanticObjectId
+from fastapi import APIRouter, HTTPException
 
-from app.db.database import get_db
 from app.models.paciente import Paciente
 from app.schemas.paciente_schema import (
     PacienteCreate,
     PacienteUpdate,
-    PacienteResponse
+    PacienteResponse,
 )
 
 router = APIRouter(
@@ -18,61 +13,83 @@ router = APIRouter(
     tags=["Pacientes"]
 )
 
-#criar paciente
+
 @router.post("/", response_model=PacienteResponse)
 async def criar_paciente(
-    paciente: PacienteCreate,
-    db: AsyncSession = Depends(get_db)
+    paciente: PacienteCreate
 ):
     novo = Paciente(**paciente.model_dump())
 
-    db.add(novo)
+    await novo.insert()
 
-    await db.commit()
-    await db.refresh(novo)
-
-    return novo
-
-#listar paciente
-@router.get("/", response_model=Page[PacienteResponse])
-async def listar_pacientes(db: AsyncSession = Depends(get_db)):
-    query = select(Paciente).options(selectinload(Paciente.consultas))
-    return await paginate(db, query)
-
-#buscar por id
-@router.get("/{paciente_id}", response_model=PacienteResponse)
-async def buscar_paciente(paciente_id: int, db: AsyncSession = Depends(get_db)):
-
-    result = await db.execute(
-        select(Paciente).options(
-            selectinload(Paciente.consultas)
-        ).where(Paciente.id == paciente_id)
+    return PacienteResponse(
+        id=str(novo.id),
+        nome=novo.nome,
+        cpf=novo.cpf,
+        telefone=novo.telefone,
+        email=novo.email,
+        cidade=novo.cidade,
+        uf=novo.uf,
     )
 
-    paciente = result.scalar_one_or_none()
+
+@router.get("/", response_model=list[PacienteResponse])
+async def listar_pacientes():
+
+    pacientes = await Paciente.find_all().to_list()
+
+    return [
+        PacienteResponse(
+            id=str(p.id),
+            nome=p.nome,
+            cpf=p.cpf,
+            telefone=p.telefone,
+            email=p.email,
+            cidade=p.cidade,
+            uf=p.uf,
+        )
+        for p in pacientes
+    ]
+
+
+@router.get("/{paciente_id}", response_model=PacienteResponse)
+async def buscar_paciente(
+    paciente_id: str
+):
+
+    paciente = await Paciente.get(
+        PydanticObjectId(paciente_id)
+    )
 
     if not paciente:
-        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+        raise HTTPException(
+            status_code=404,
+            detail="Paciente não encontrado"
+        )
 
-    return paciente
+    return PacienteResponse(
+        id=str(paciente.id),
+        nome=paciente.nome,
+        cpf=paciente.cpf,
+        telefone=paciente.telefone,
+        email=paciente.email,
+        cidade=paciente.cidade,
+        uf=paciente.uf,
+    )
 
-#atualizar
-@router.put("/{paciente_id}",
+
+@router.put(
+    "/{paciente_id}",
     response_model=PacienteResponse
 )
 async def atualizar_paciente(
-    paciente_id: int,
-    dados: PacienteUpdate,
-    db: AsyncSession = Depends(get_db)
+    paciente_id: str,
+    dados: PacienteUpdate
 ):
 
-    result = await db.execute(
-        select(Paciente).where(
-            Paciente.id == paciente_id
-        )
+    paciente = await Paciente.get(
+        PydanticObjectId(paciente_id)
     )
-
-    paciente = result.scalar_one_or_none()
 
     if not paciente:
         raise HTTPException(
@@ -80,30 +97,34 @@ async def atualizar_paciente(
             detail="Paciente não encontrado"
         )
 
-    for campo, valor in dados.model_dump(
+    update_data = dados.model_dump(
         exclude_unset=True
-    ).items():
+    )
+
+    for campo, valor in update_data.items():
         setattr(paciente, campo, valor)
 
-    await db.commit()
+    await paciente.save()
 
-    await db.refresh(paciente)
-
-    return paciente
-
-#deletar
-@router.delete("/{paciente_id}")
-async def deletar_paciente(
-    paciente_id: int,
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(
-        select(Paciente).where(
-            Paciente.id == paciente_id
-        )
+    return PacienteResponse(
+        id=str(paciente.id),
+        nome=paciente.nome,
+        cpf=paciente.cpf,
+        telefone=paciente.telefone,
+        email=paciente.email,
+        cidade=paciente.cidade,
+        uf=paciente.uf,
     )
 
-    paciente = result.scalar_one_or_none()
+
+@router.delete("/{paciente_id}")
+async def deletar_paciente(
+    paciente_id: str
+):
+
+    paciente = await Paciente.get(
+        PydanticObjectId(paciente_id)
+    )
 
     if not paciente:
         raise HTTPException(
@@ -111,8 +132,7 @@ async def deletar_paciente(
             detail="Paciente não encontrado"
         )
 
-    await db.delete(paciente)
-    await db.commit()
+    await paciente.delete()
 
     return {
         "message": "Paciente removido com sucesso"

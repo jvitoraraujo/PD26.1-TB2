@@ -1,40 +1,17 @@
-from __future__ import annotations
+from beanie import Document, Link
 
-from typing import TYPE_CHECKING
+from app.models.especialidade import Especialidade
 
-from sqlalchemy import Boolean, Column, Integer, String
-from sqlalchemy.orm import Mapped, relationship
+class Medico(Document):
+    nome: str
+    crm: str
+    telefone: str
+    email: str | None = None
+    cidade: str
+    uf: str
+    ativo: bool = True
 
-from app.db.database import Base
+    especialidades: list[Link[Especialidade]]
 
-if TYPE_CHECKING:
-    from app.models.consulta import Consulta
-    from app.models.internacao import Internacao
-
-
-class Medico(Base):
-    """Representa um médico no sistema hospitalar."""
-
-    __tablename__ = "medicos"
-
-    id = Column(Integer, primary_key=True, index=True)
-    nome = Column(String, nullable=False)
-    crm = Column(String, unique=True, index=True, nullable=False)
-    especialidade = Column(String, nullable=False)
-    telefone = Column(String, nullable=False)
-    email = Column(String, nullable=True)
-    cidade = Column(String, nullable=False)
-    uf = Column(String(2), nullable=False)
-    ativo = Column(Boolean, default=True)
-
-    # Relacionamento one-to-many com Internacao
-    internacoes: Mapped[list["Internacao"]] = relationship(
-        back_populates="medico",
-        lazy="selectin",
-    )
-
-    # Relacionamento one-to-many com Consulta
-    consultas: Mapped[list["Consulta"]] = relationship(
-        back_populates="medico",
-        lazy="selectin",
-    )
+    class Settings:
+        name = "medicos"

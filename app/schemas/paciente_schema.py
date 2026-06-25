@@ -19,11 +19,11 @@ class PacienteUpdate(BaseModel):
 
 
 class PacienteResponse(BaseModel):
-    id: int
+    id: str
     nome: str
     cpf: str
     telefone: str
-    email: str
+    email: EmailStr
     cidade: str
     uf: str
 

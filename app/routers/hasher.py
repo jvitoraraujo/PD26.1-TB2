@@ -9,4 +9,5 @@ def calcular_hash(algoritmo: str, valor: str) -> str:
     # A lógica que você já criou:
     input_bytes = valor.encode('utf-8')
     hash_obj = algoritmos[algoritmo.lower()](input_bytes)
+    
     return hash_obj.hexdigest()

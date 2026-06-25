@@ -1,135 +1,198 @@
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy import func
-from fastapi_pagination import Page
-from fastapi_pagination.ext.sqlalchemy import paginate
+from beanie import PydanticObjectId
+from fastapi import APIRouter, HTTPException
 
-from app.db.database import get_db
 from app.models.medico import Medico
-from app.schemas import medico_schema
+from app.models.especialidade import Especialidade
 
-router = APIRouter(prefix="/medicos", tags=["Médicos"])
+from app.schemas.medico_schema import (
+    MedicoCreate,
+    MedicoResponse,
+)
 
-
-# ---------------------------------------------------------
-# ROTAS ESTÁTICAS (Devem vir antes do /{medico_id})
-# ---------------------------------------------------------
-
-@router.get("/estatisticas/count", response_model=dict)
-async def contar_medicos(db: AsyncSession = Depends(get_db)):
-    """
-    Retorna o número total de médicos cadastrados no sistema.
-    """
-    # Utiliza a função count do SQLAlchemy de forma otimizada
-    resultado = await db.execute(select(func.count(Medico.id)))
-    total = resultado.scalar()
-    
-    return {"total_medicos": total}
+router = APIRouter(
+    prefix="/medicos",
+    tags=["Médicos"]
+)
 
 
-@router.get("/buscar/filtros", response_model=Page[medico_schema.MedicoResponse])
-async def buscar_medicos_por_filtro(
-    especialidade: Optional[str] = None,
-    cidade: Optional[str] = None,
-    uf: Optional[str] = None,
-    ativo: Optional[bool] = None,
-    db: AsyncSession = Depends(get_db)
+@router.get("/estatisticas/count")
+async def contar_medicos():
+
+    total = await Medico.count()
+
+    return {
+        "total_medicos": total
+    }
+
+
+@router.get("/")
+async def listar_medicos():
+
+    medicos = await Medico.find_all(
+        fetch_links=True
+    ).to_list()
+
+    resposta = []
+
+    for medico in medicos:
+
+        resposta.append(
+            {
+                "id": str(medico.id),
+                "nome": medico.nome,
+                "crm": medico.crm,
+                "telefone": medico.telefone,
+                "email": medico.email,
+                "cidade": medico.cidade,
+                "uf": medico.uf,
+                "ativo": medico.ativo,
+                "especialidades": [
+                    e.nome
+                    for e in medico.especialidades
+                ]
+            }
+        )
+
+    return resposta
+
+
+@router.get("/{medico_id}")
+async def obter_medico(
+    medico_id: str
 ):
-    """
-    Busca avançada de médicos utilizando filtros opcionais.
-    """
-    query = select(Medico)
-    
-    # Adição condicional de filtros (cláusulas WHERE)
-    if especialidade:
-        query = query.where(Medico.especialidade.ilike(f"%{especialidade}%"))
-    if cidade:
-        query = query.where(Medico.cidade.ilike(f"%{cidade}%"))
-    if uf:
-        query = query.where(Medico.uf.ilike(f"%{uf}%"))
-    if ativo is not None:
-        query = query.where(Medico.ativo == ativo)
-        
-    query = query.order_by(Medico.nome)
-    
-    return await paginate(db, query)
 
+    medico = await Medico.get(
+        PydanticObjectId(medico_id),
+        fetch_links=True
+    )
 
-@router.get("/", response_model=Page[medico_schema.MedicoResponse])
-async def listar_medicos(db: AsyncSession = Depends(get_db)):
-    """
-    Lista todos os médicos cadastrados com paginação.
-    """
-    query = select(Medico).order_by(Medico.nome)
-    return await paginate(db, query)
-
-
-@router.post("/", response_model=medico_schema.MedicoResponse, status_code=status.HTTP_201_CREATED)
-async def criar_medico(medico_input: medico_schema.MedicoCreate, db: AsyncSession = Depends(get_db)):
-    """
-    Cadastra um novo médico.
-    """
-    novo_medico = Medico(**medico_input.model_dump())
-    db.add(novo_medico)
-    await db.commit()
-    await db.refresh(novo_medico)
-    return novo_medico
-
-
-# ---------------------------------------------------------
-# ROTAS DINÂMICAS (Com /{medico_id} na URL)
-# ---------------------------------------------------------
-
-@router.get("/{medico_id}", response_model=medico_schema.MedicoResponse)
-async def obter_medico(medico_id: int, db: AsyncSession = Depends(get_db)):
-    """
-    Busca um médico específico pelo seu ID.
-    """
-    result = await db.execute(select(Medico).where(Medico.id == medico_id))
-    medico = result.scalar_one_or_none()
-    
     if not medico:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médico não encontrado")
-    return medico
+        raise HTTPException(
+            status_code=404,
+            detail="Médico não encontrado"
+        )
+
+    return {
+        "id": str(medico.id),
+        "nome": medico.nome,
+        "crm": medico.crm,
+        "telefone": medico.telefone,
+        "email": medico.email,
+        "cidade": medico.cidade,
+        "uf": medico.uf,
+        "ativo": medico.ativo,
+        "especialidades": [
+            str(e.id)
+            for e in medico.especialidades
+        ]
+    }
 
 
-@router.put("/{medico_id}", response_model=medico_schema.MedicoResponse)
+@router.post("/")
+async def criar_medico(
+    medico_input: MedicoCreate
+):
+
+    especialidades = []
+
+    for esp_id in medico_input.especialidades:
+
+        esp = await Especialidade.get(
+            PydanticObjectId(esp_id)
+        )
+
+        if esp:
+            especialidades.append(esp)
+
+    novo_medico = Medico(
+        nome=medico_input.nome,
+        crm=medico_input.crm,
+        telefone=medico_input.telefone,
+        email=medico_input.email,
+        cidade=medico_input.cidade,
+        uf=medico_input.uf,
+        ativo=medico_input.ativo,
+        especialidades=especialidades,
+    )
+
+    await novo_medico.insert()
+
+    return {
+        "id": str(novo_medico.id),
+        "nome": novo_medico.nome,
+        "crm": novo_medico.crm,
+        "telefone": novo_medico.telefone,
+        "email": novo_medico.email,
+        "cidade": novo_medico.cidade,
+        "uf": novo_medico.uf,
+        "ativo": novo_medico.ativo,
+        "especialidades": [
+            str(e.id)
+            for e in especialidades
+        ]
+    }
+
+
+@router.put("/{medico_id}")
 async def atualizar_medico(
-    medico_id: int, 
-    medico_input: medico_schema.MedicoCreate, 
-    db: AsyncSession = Depends(get_db)
+    medico_id: str,
+    medico_input: MedicoCreate
 ):
-    """
-    Atualiza integralmente os dados de um médico existente pelo ID.
-    """
-    result = await db.execute(select(Medico).where(Medico.id == medico_id))
-    medico = result.scalar_one_or_none()
-    
+
+    medico = await Medico.get(
+        PydanticObjectId(medico_id)
+    )
+
     if not medico:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médico não encontrado")
-    
-    # Atualiza os atributos do objeto SQLAlchemy com os novos dados
-    for key, value in medico_input.model_dump().items():
-        setattr(medico, key, value)
-        
-    await db.commit()
-    await db.refresh(medico)
-    return medico
+        raise HTTPException(
+            status_code=404,
+            detail="Médico não encontrado"
+        )
+
+    especialidades = []
+
+    for esp_id in medico_input.especialidades:
+
+        esp = await Especialidade.get(
+            PydanticObjectId(esp_id)
+        )
+
+        if esp:
+            especialidades.append(esp)
+
+    medico.nome = medico_input.nome
+    medico.crm = medico_input.crm
+    medico.telefone = medico_input.telefone
+    medico.email = medico_input.email
+    medico.cidade = medico_input.cidade
+    medico.uf = medico_input.uf
+    medico.ativo = medico_input.ativo
+    medico.especialidades = especialidades
+
+    await medico.save()
+
+    return {
+        "message": "Médico atualizado com sucesso"
+    }
 
 
-@router.delete("/{medico_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def deletar_medico(medico_id: int, db: AsyncSession = Depends(get_db)):
-    """
-    Remove um médico do banco de dados pelo ID.
-    """
-    result = await db.execute(select(Medico).where(Medico.id == medico_id))
-    medico = result.scalar_one_or_none()
-    
+@router.delete("/{medico_id}")
+async def deletar_medico(
+    medico_id: str
+):
+
+    medico = await Medico.get(
+        PydanticObjectId(medico_id)
+    )
+
     if not medico:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médico não encontrado")
-        
-    await db.delete(medico)
-    await db.commit()
-    return None
+        raise HTTPException(
+            status_code=404,
+            detail="Médico não encontrado"
+        )
+
+    await medico.delete()
+
+    return {
+        "message": "Médico removido com sucesso"
+    }

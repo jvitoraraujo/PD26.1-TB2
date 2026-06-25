@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class ExameCreate(BaseModel):
     tipo: str
     resultado: str
-    consulta_id: int
+    consulta_id: str
 
 
 class ExameUpdate(BaseModel):
@@ -13,10 +13,10 @@ class ExameUpdate(BaseModel):
 
 
 class ExameResponse(BaseModel):
-    id: int
+    id: str
     tipo: str
     resultado: str
-    consulta_id: int
+    consulta_id: str
 
     model_config = {
         "from_attributes": True
