@@ -7,6 +7,10 @@ class ConsultaCreate(BaseModel):
     medico_id: str
     diagnostico: str | None = None
 
+class ConsultaUpdate(BaseModel):
+    diagnostico: str | None = None
+    paciente_id: str | None = None
+    medico_id: str | None = None
 
 class ConsultaResponse(BaseModel):
     id: str

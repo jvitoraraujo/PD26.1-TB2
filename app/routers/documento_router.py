@@ -1,16 +1,21 @@
 import os
 
 from beanie import PydanticObjectId
+from bson.errors import InvalidId
 from fastapi import (
     APIRouter,
     UploadFile,
     File,
-    HTTPException
 )
 from fastapi.responses import FileResponse
 
 from app.models.documento import Documento
 from app.models.paciente import Paciente
+from app.core.exceptions import (
+    EntidadeNaoEncontradaException,
+    IdInvalidoException,
+    RegraNegocioException,
+)
 
 UPLOAD_DIR = "uploads_documentos"
 
@@ -31,27 +36,29 @@ TIPOS_PERMITIDOS = [
 ]
 
 
+def _converter_object_id(valor: str, campo: str = "id") -> PydanticObjectId:
+    """Converte uma string em PydanticObjectId, levantando exceção tratada se inválida."""
+    try:
+        return PydanticObjectId(valor)
+    except InvalidId:
+        raise IdInvalidoException(valor, campo)
+
+
 @router.post("/pacientes/{paciente_id}/documents")
 async def upload_documento(
     paciente_id: str,
     file: UploadFile = File(...)
 ):
-
+    """Envia um novo documento (PDF ou imagem) para um paciente."""
     if file.content_type not in TIPOS_PERMITIDOS:
-        raise HTTPException(
-            status_code=400,
-            detail="Tipo de arquivo não permitido"
-        )
+        raise RegraNegocioException("Tipo de arquivo não permitido")
 
     paciente = await Paciente.get(
-        PydanticObjectId(paciente_id)
+        _converter_object_id(paciente_id, "paciente_id")
     )
 
     if not paciente:
-        raise HTTPException(
-            status_code=404,
-            detail="Paciente não encontrado"
-        )
+        raise EntidadeNaoEncontradaException("Paciente", paciente_id)
 
     content = await file.read()
 
@@ -83,10 +90,15 @@ async def upload_documento(
 async def listar_documentos(
     paciente_id: str
 ):
+    """Lista os documentos vinculados a um paciente."""
+    paciente_oid = _converter_object_id(paciente_id, "paciente_id")
+
+    paciente = await Paciente.get(paciente_oid)
+    if not paciente:
+        raise EntidadeNaoEncontradaException("Paciente", paciente_id)
 
     documentos = await Documento.find(
-        Documento.paciente.id ==
-        PydanticObjectId(paciente_id)
+        Documento.paciente.id == paciente_oid
     ).to_list()
 
     return [
@@ -102,17 +114,14 @@ async def listar_documentos(
 async def obter_documento(
     document_id: str
 ):
-
+    """Retorna os metadados de um documento."""
     doc = await Documento.get(
-        PydanticObjectId(document_id),
+        _converter_object_id(document_id, "document_id"),
         fetch_links=True
     )
 
     if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Documento não encontrado"
-        )
+        raise EntidadeNaoEncontradaException("Documento", document_id)
 
     return {
         "id": str(doc.id),
@@ -128,16 +137,13 @@ async def obter_documento(
 async def download_documento(
     document_id: str
 ):
-
+    """Baixa o arquivo físico associado ao documento."""
     doc = await Documento.get(
-        PydanticObjectId(document_id)
+        _converter_object_id(document_id, "document_id")
     )
 
     if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Documento não encontrado"
-        )
+        raise EntidadeNaoEncontradaException("Documento", document_id)
 
     caminho = os.path.join(
         UPLOAD_DIR,
@@ -145,10 +151,7 @@ async def download_documento(
     )
 
     if not os.path.exists(caminho):
-        raise HTTPException(
-            status_code=404,
-            detail="Arquivo não encontrado"
-        )
+        raise EntidadeNaoEncontradaException("Arquivo físico do documento", document_id)
 
     return FileResponse(
         caminho,
@@ -160,16 +163,13 @@ async def download_documento(
 async def deletar_documento(
     document_id: str
 ):
-
+    """Remove um documento e seu arquivo físico."""
     doc = await Documento.get(
-        PydanticObjectId(document_id)
+        _converter_object_id(document_id, "document_id")
     )
 
     if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Documento não encontrado"
-        )
+        raise EntidadeNaoEncontradaException("Documento", document_id)
 
     caminho = os.path.join(
         UPLOAD_DIR,

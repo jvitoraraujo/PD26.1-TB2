@@ -23,6 +23,7 @@ from app.routers import (
     consulta_router,
     internacao_router as internacoes,
     documento_router,
+    especialidade_router,
 )
 
 from app.core.exceptions import configurar_excecoes
@@ -61,6 +62,7 @@ app.include_router(exame_router.router)
 app.include_router(consulta_router.router)
 app.include_router(internacoes.router)
 app.include_router(documento_router.router)
+app.include_router(especialidade_router.router)
 
 add_pagination(app)
 

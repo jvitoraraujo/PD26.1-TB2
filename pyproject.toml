@@ -1,23 +1,17 @@
 [project]
-name = "app"
+name = "gestao-hospitalar"
 version = "0.1.0"
-description = "Gestão Hospitalar API"
+description = "API de Gestão Hospitalar com FastAPI, MongoDB e MinIO"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.110.0",
-    "pydantic>=2.7.0",
-    "uvicorn[standard]>=0.29.0",
-    "sqlalchemy>=2.0.29",
-    "alembic>=1.13.1",
-    "fastapi-pagination>=0.12.24",
-    "python-multipart>=0.0.9",
-    "python-dotenv>=1.0.1",
-    "asyncpg>=0.29.0",
-    "aiosqlite>=0.22.1",
-    "email-validator>=2.3.0",
-    "faker>=40.18.0",
-    "beanie>=2.1.0",
-    "motor>=3.7.1",
-    "pydantic-settings>=2.14.2",
+    "beanie>=2.0.1",
+    "fastapi[standard]>=0.128.0",
+    "fastapi-pagination>=0.15.12",
+    "aioboto3>=13.0.0",
+    "python-dotenv>=1.0.0",
+    "pydantic-settings>=2.0.0",
+    "faker>=40.12.0",
+    "python-multipart>=0.0.28",
 ]
+ 
