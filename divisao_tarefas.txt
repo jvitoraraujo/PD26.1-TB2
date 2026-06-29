@@ -1,24 +1,41 @@
-Vitor: Tratamento robusto de exceções global;
-       Configuração do Alembic e migrações;
-       Configuração da API assíncrona (async/await, AsyncSession, AsyncEngine);
-       Entidade Médico com CRUD completo;
-       Consultas do Médico: busca por ID, filtro por especialidade, cidade e UF, contagem total;
-       Entidade Document com upload/download de arquivos (POST, GET, DELETE);
-       Paginação global com fastapi-pagination;
-       divisao_tarefas.txt;
+Weydna: Banco de dados e modelagem
+* Configurar o projeto com uv.
+* Configurar a conexão com o MongoDB utilizando Beanie.
+* Criar os modelos (Document) de todas as entidades.
+* Implementar os relacionamentos:
+  * One-to-Many
+  * Many-to-Many
+* Criar os schemas (Pydantic), caso separados dos modelos.
+* Configurar leitura das variáveis do .env.
+* Criar o script seed.py utilizando Faker para gerar pelo menos 100 registros por coleção.
+* Validar a persistência dos dados no MongoDB.
 
-Weydna: Paciente com CRUD completo;
-        Consultas do Paciente;
-        Entidade Exame com CRUD completo;
-        Consultas do Exame;
-        Relacionamento one-to-many entre Paciente e Consulta, Consulta e Exame;
-        Eager loading com selectinload() nos relacionamentos;
-        Configuração do PostgreSQL (Supabase/Neon) no .env;
-        Script de carga inicial com Faker pt_BR (100+ registros por entidade);
+Davila: API, CRUD e Consultas
+* Desenvolver todos os endpoints CRUD.
+* Implementar paginação (fastapi-pagination).
+* Implementar tratamento de exceções.
+* Desenvolver todas as consultas obrigatórias:
+  * busca por ID;
+  * busca por relacionamento;
+  * busca textual (regex);
+  * filtros por data/ano;
+  * ordenações;
+  * aggregation pipeline;
+  * consultas envolvendo múltiplas coleções.
+* Validar todas as respostas da API.
 
-Davila: Consultas: listagem por médico, listagem por paciente, filtro por data, busca por diagnóstico;
-        Entidade Internação com CRUD completo;
-        Consultas: listagem por paciente, filtro por período, contagem por quarto;
-        Relacionamento many-to-many entre Consulta e Médico/Paciente;
-        Eager loading com joinedload() nos relacionamentos many-to-one;
-        Tratamento robusto de exceções global;
+Vitor: Documentos, MinIO, Docker e Organização
+* Configurar o MinIO.
+* Criar a entidade Document.
+* Implementar upload de arquivos.
+* Implementar download de arquivos.
+* Implementar atualização de arquivos.
+* Implementar exclusão de arquivos.
+* Fazer a associação entre documentos e entidades.
+* Configurar Docker.
+* Criar Dockerfile.
+* Criar docker-compose.yml.
+* Configurar os serviços (api, mongo e minio).
+* Elaborar o README.
+* Criar o diagrama Mermaid.
+* Revisar o projeto para entrega.
