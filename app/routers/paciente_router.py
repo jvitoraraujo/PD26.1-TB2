@@ -76,7 +76,7 @@ async def deletar_paciente(paciente_id: PydanticObjectId) -> dict:
 
 @router.get("/busca/nome", response_model=List[Paciente])
 async def buscar_por_nome(termo: str = Query(..., description="Trecho do nome do paciente")):
-    """Busca pacientes por texto parcial no nome (Regex - Case Insensitive)."""
+    """Busca pacientes por texto parcial no nome."""
     return await Paciente.find(
         {"nome": {"$regex": termo, "$options": "i"}}
     ).to_list()

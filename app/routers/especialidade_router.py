@@ -17,7 +17,7 @@ router = APIRouter(
     tags=["Especialidades"]
 )
 
-#O crud básico e paginação
+#O crud básico
 
 @router.post("/", response_model=EspecialidadeResponse)
 async def criar_especialidade(dados: EspecialidadeCreate) -> EspecialidadeResponse:
@@ -69,7 +69,7 @@ async def deletar_especialidade(especialidade_id: PydanticObjectId) -> dict:
     return {"message": "Especialidade removida com sucesso"}
 
 
-# #Consultas obrigátorias
+#Consultas obrigátorias
 
 @router.get("/busca/nome", response_model=List[Especialidade])
 async def buscar_especialidade_por_nome(
