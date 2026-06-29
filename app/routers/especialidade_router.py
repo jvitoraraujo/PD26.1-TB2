@@ -17,9 +17,7 @@ router = APIRouter(
     tags=["Especialidades"]
 )
 
-# =============================================================================
-# CRUD BÁSICO E PAGINAÇÃO
-# =============================================================================
+#O crud básico e paginação
 
 @router.post("/", response_model=EspecialidadeResponse)
 async def criar_especialidade(dados: EspecialidadeCreate) -> EspecialidadeResponse:
