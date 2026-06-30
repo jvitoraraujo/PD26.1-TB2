@@ -23,5 +23,7 @@ RUN uv pip install --system minio
 # Copia o código-fonte da aplicação
 COPY ./app ./app
 
+#Copia seed.py
+COPY ./seed.py ./seed.py
 # Expõe a porta e inicia o servidor
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
