@@ -1,4 +1,5 @@
 print("INICIANDO SEED")
+
 import asyncio
 import random
 from datetime import datetime, timedelta
@@ -20,23 +21,30 @@ from app.models import (
 
 fake = Faker("pt_BR")
 
-ESPECIALIDADES = [
-    "Cardiologia",
-    "Pediatria",
-    "Ortopedia",
-    "Neurologia",
-    "Dermatologia",
-    "Psiquiatria",
-    "Urologia",
-    "Oftalmologia",
-    "Ginecologia",
-    "Clínica Geral",
-]
+# -----------------------
+# Especialidades reais
+# -----------------------
 
+ESPECIALIDADES = [
+    "Acupuntura", "Alergia e Imunologia", "Anestesiologia", "Angiologia",
+    "Cardiologia", "Cirurgia Cardiovascular", "Cirurgia Geral",
+    "Cirurgia Plástica", "Cirurgia Torácica", "Cirurgia Vascular",
+    "Clínica Médica", "Dermatologia", "Endocrinologia", "Gastroenterologia",
+    "Geriatria", "Ginecologia", "Hematologia", "Infectologia",
+    "Mastologia", "Medicina de Família e Comunidade", "Nefrologia",
+    "Neurocirurgia", "Neurologia", "Oftalmologia", "Oncologia",
+    "Ortopedia", "Otorrinolaringologia", "Pediatria", "Pneumologia",
+    "Psiquiatria", "Radiologia", "Reumatologia", "Urologia",
+    "Medicina Intensiva", "Medicina do Trabalho", "Medicina Esportiva",
+    "Cirurgia Pediátrica", "Endoscopia", "Coloproctologia",
+    "Medicina Nuclear", "Patologia", "Radioterapia",
+    "Medicina Legal", "Genética Médica", "Nutrologia",
+    "Cirurgia Oncológica", "Hepatologia", "Neonatologia",
+    "Medicina Fetal", "Dor", "Sono"
+]
 
 async def seed():
 
-    # 🔴 PRIMEIRO: inicializa Beanie aqui também
     await init_beanie(
         database=db,
         document_models=[
@@ -60,42 +68,36 @@ async def seed():
     await Documento.delete_all()
     await Especialidade.delete_all()
 
-    # -----------------------
-    # Especialidades
-    # -----------------------
     especialidades = []
 
-    for nome in ESPECIALIDADES:
-        esp = Especialidade(nome=nome)
+    for _ in range(100):
+        esp = Especialidade(
+            nome=random.choice(ESPECIALIDADES)
+        )
         await esp.insert()
         especialidades.append(esp)
 
-    print("Especialidades criadas")
+    print("100 especialidades criadas")
 
-    # -----------------------
-    # Médicos
-    # -----------------------
     medicos = []
 
     for _ in range(100):
         medico = Medico(
             nome=fake.name(),
-            crm=str(fake.random_number(digits=6)),
+            crm=f"{random.randint(10000,99999)}/{fake.estado_sigla()}",
             telefone=fake.phone_number(),
-            email=fake.email(),
+            email=f"dr.{fake.last_name().lower()}{random.randint(1,999)}@hospital.com.br",
             cidade=fake.city(),
             uf=fake.estado_sigla(),
-            ativo=random.choice([True, False]),
+            ativo=random.choice([True, True, True, False]),
             especialidades=random.sample(especialidades, k=random.randint(1, 3)),
         )
+
         await medico.insert()
         medicos.append(medico)
 
     print("100 médicos criados")
 
-    # -----------------------
-    # Pacientes
-    # -----------------------
     pacientes = []
 
     for _ in range(100):
@@ -107,14 +109,12 @@ async def seed():
             cidade=fake.city(),
             uf=fake.estado_sigla(),
         )
+
         await paciente.insert()
         pacientes.append(paciente)
 
     print("100 pacientes criados")
 
-    # -----------------------
-    # Consultas
-    # -----------------------
     consultas = []
 
     for _ in range(100):
@@ -124,26 +124,24 @@ async def seed():
             paciente=random.choice(pacientes),
             medico=random.choice(medicos),
         )
+
         await consulta.insert()
         consultas.append(consulta)
 
     print("100 consultas criadas")
 
-    # -----------------------
-    # Internações
-    # -----------------------
     for _ in range(100):
 
         entrada = fake.date_time_between("-2y", "now")
-        saida = entrada + timedelta(days=random.randint(1, 15))
+        saida = entrada + timedelta(days=random.randint(1, 20))
 
         internacao = Internacao(
             data_entrada=entrada,
             data_saida=saida,
             quarto=str(random.randint(100, 999)),
             motivo=fake.sentence(),
-            observacoes=fake.text(max_nb_chars=100),
-            valor_diaria=round(random.uniform(150, 1500), 2),
+            observacoes=fake.text(max_nb_chars=120),
+            valor_diaria=round(random.uniform(200, 2000), 2),
             paciente=random.choice(pacientes),
             medico=random.choice(medicos),
         )
@@ -152,8 +150,85 @@ async def seed():
 
     print("100 internações criadas")
 
-    print("Seed finalizado com sucesso!")
+    documentos = []
 
+    TIPOS_DOCUMENTO = [
+        ("application/pdf", "pdf", "laudo"),
+        ("application/pdf", "pdf", "receita"),
+        ("application/pdf", "pdf", "atestado"),
+        ("image/jpeg", "jpg", "radiografia"),
+        ("image/png", "png", "ultrassom"),
+    ]
+
+    for paciente in random.sample(pacientes, 100):
+
+        content_type, extension, tipo = random.choice(TIPOS_DOCUMENTO)
+
+        sobrenome = paciente.nome.split()[-1].lower().replace(" ", "_")
+
+        documento = Documento(
+            original_filename=f"{tipo}_{sobrenome}_{random.randint(1000,9999)}.{extension}",
+            content_type=content_type,
+            extension=extension,
+            size_bytes=random.randint(100_000, 8_000_000),
+            created_at=fake.date_time_between("-2y", "now"),
+            paciente=paciente,
+        )
+
+        await documento.insert()
+        documentos.append(documento)
+
+    print("100 documentos criados")
+
+    TIPOS_EXAME = [
+        "Hemograma Completo",
+        "Glicemia em Jejum",
+        "Colesterol Total",
+        "Triglicerídeos",
+        "Raio-X de Tórax",
+        "Tomografia Computadorizada",
+        "Ressonância Magnética",
+        "Ultrassonografia Abdominal",
+        "Eletrocardiograma",
+        "Ecocardiograma",
+        "Urina Tipo I",
+        "Creatinina",
+        "Ureia",
+        "TSH",
+        "T4 Livre",
+        "Vitamina D",
+        "PCR",
+        "Gasometria Arterial",
+        "Densitometria Óssea",
+        "Mamografia",
+    ]
+
+    RESULTADOS = [
+        "Dentro dos valores de referência.",
+        "Sem alterações significativas.",
+        "Leve alteração observada.",
+        "Resultado compatível com o quadro clínico.",
+        "Necessário acompanhamento médico.",
+        "Sem evidências de anormalidades.",
+        "Alteração discreta nos parâmetros.",
+        "Resultado normal.",
+        "Paciente estável clinicamente.",
+        "Recomenda-se acompanhamento periódico.",
+    ]
+
+    for _ in range(100):
+
+        exame = Exame(
+            tipo=random.choice(TIPOS_EXAME),
+            resultado=random.choice(RESULTADOS),
+            consulta=random.choice(consultas),
+        )
+
+        await exame.insert()
+
+    print("100 exames criados")
+
+    print("Seed finalizado com sucesso!")
 
 if __name__ == "__main__":
     asyncio.run(seed())
