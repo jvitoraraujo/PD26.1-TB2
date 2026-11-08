@@ -1,0 +1,26 @@
+# Segredos e configuração local
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+env/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Dados locais
+uploads_documentos/
+*.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Sistema
+.DS_Store
+Thumbs.db
